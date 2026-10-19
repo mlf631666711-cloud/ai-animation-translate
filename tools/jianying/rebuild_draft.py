@@ -219,7 +219,7 @@ def main():
     store['draft_virtual_store'] = [by[t] for t in sorted(by)]
     store['draft_materials'] = [{'type': g['type'], 'value': g['value']} for g in meta['draft_materials'] if g['value']]
     json.dump(store, open(sp, 'w', encoding='utf-8'), ensure_ascii=False)
-    print('⑥ 素材箱树：%d 个子项' % len(entries))
+    print('⑥ 素材箱树：%d 个子项（母版 %d + 本次新增 %d）' % (len(kids), len(kids) - len(entries), len(entries)))
 
     # ---------- 7 自检 ----------
     print('\n=== 自检 ===')
@@ -237,6 +237,10 @@ def main():
     ck(mb['draft_id'] == meta['draft_id'] and mb['draft_name'] == a.name, 'meta 身份正确')
     ids_content = {m['local_material_id'] for k in ('videos', 'audios', 'images') for m in back['materials'].get(k, [])}
     ids_meta = {it['id'] for g in mb['draft_materials'] for it in g['value']}
+    n_master_meta = sum(len(g.get('value') or []) for g in (master_meta.get('draft_materials') or []))
+    ck(len(ids_meta) >= n_master_meta,
+       '素材箱条目数不少于母版（母版原有版面素材一条不少）',
+       '%d ≥ %d' % (len(ids_meta), n_master_meta))
     ids_store = {c['child_id'] for c in store['draft_virtual_store'][1]['value']}
     ck(ids_content <= ids_store <= ids_meta,
        '素材箱完整（内容 ⊆ 树 ⊆ meta，母版原有素材保留）',
