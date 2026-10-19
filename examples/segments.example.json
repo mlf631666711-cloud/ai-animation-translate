@@ -1,0 +1,24 @@
+{
+  "_note": "分段真源：只认这一份。句末标点成段；逗号/冒号/破折号结尾视为排版换行，与下一行合并。",
+  "_source": "my_script_en.md",
+  "segments": [
+    {
+      "id": "s01",
+      "shot": 1,
+      "text": "Racing fans, look here! Two columns, eight levels, fourteen parking spaces.",
+      "read": ""
+    },
+    {
+      "id": "s02",
+      "shot": 2,
+      "text": "The garage uses an Espressif ESP32-S3 module, with 16 MB Flash and 8 MB PSRAM.",
+      "read": "The garage uses an Espressif ESP32-S3 module, with 16 MB Flash and 8 MB PSRAM."
+    },
+    {
+      "id": "s03",
+      "shot": null,
+      "text": "More creative ESP32 projects — find more at 某客户品牌.",
+      "read": ""
+    }
+  ]
+}
