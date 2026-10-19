@@ -72,8 +72,9 @@ def main():
     tree = next((g for g in (store.get('draft_virtual_store') or []) if g.get('type') == 1), None)
     ids_s = {i['child_id'] for i in ((tree or {}).get('value') or [])}
     print('\n三处 id：内容 %d · meta %d · 素材箱树 %d' % (len(ids_c), len(ids_m), len(ids_s)))
-    ok = ids_c == ids_m == ids_s
-    print('   一致：%s' % ('✅' if ok else '❌（素材箱会缺东西）'))
+    ok = ids_c <= ids_s <= ids_m
+    print('   内容 ⊆ 素材箱树 ⊆ meta：%s' % ('✅' if ok else '❌（会缺素材/缺记录）'))
+    print('   素材箱里应有 %d 个（含母版原有素材，未使用的也在）' % len(ids_s))
 
     ok_all = ok and not miss and no_lm == 0
     print('\n结论：%s' % ('可以交付 ✅' if ok_all else '先修上面标 ❌ 的项'))
