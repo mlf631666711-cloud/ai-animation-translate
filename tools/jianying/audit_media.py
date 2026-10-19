@@ -8,7 +8,7 @@
   · 素材箱空着（时间线能播，左边却没有素材）—— 真源是 draft_virtual_store.json 的树
   · 内容 / meta / 树 三处 id 不一致
 """
-import argparse, io, json, os, sys
+import argparse, io, json, os, re, sys
 if (getattr(sys.stdout, 'encoding', '') or '').lower() not in ('utf-8', 'utf8'):
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -48,6 +48,9 @@ def main():
         print('  轨%d %-6s %d 段' % (i, t['type'], len(t['segments'])))
 
     # 1 路径
+    # ★ 只有「被时间线引用」的素材才需要 local_material_id（素材箱要显示它）；
+    #   母版里未被引用的历史素材没有 id 是正常的，不能算错。
+    used_mid = {s.get('material_id') for t in c['tracks'] for s in t['segments']}
     miss, total, no_lm = [], 0, 0
     for kind in ('videos', 'audios', 'images'):
         for x in c['materials'].get(kind, []):
@@ -55,9 +58,15 @@ def main():
             if not p:
                 continue
             total += 1
-            if not x.get('local_material_id'):
+            _b = os.path.basename(p)
+            _is_new = _b.startswith('shot') or (_b[:2].upper() == 'S0' and _b.lower().endswith('.wav'))
+            # 母版自带素材大量没有 id（母版自身 28/120），只有本次新增素材必须有
+            if _is_new and not x.get('local_material_id') and x.get('id') in used_mid:
                 no_lm += 1
-            if not os.path.exists(p):
+            # 剪映的草稿内资源用占位符引用：##_draftpath_placeholder_<uuid>_##/xxx
+            q = re.sub(r'##_draftpath_placeholder_[0-9A-Fa-f-]+_##[\\/]?',
+                       a.draft.rstrip('\\/') + '/', p)
+            if not os.path.exists(q):
                 miss.append(p)
     print('\n素材 %d 条 · 缺文件 %d · 缺 local_material_id %d' % (total, len(miss), no_lm))
     for p in miss[:8]:
