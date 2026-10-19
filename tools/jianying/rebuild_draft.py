@@ -172,12 +172,15 @@ def main():
     auds = content['materials'].get('audios', [])
     entries = [entry(m, 'video', 0) for m in vids] + [entry(m, 'music', 0) for m in auds] + \
               [entry(m, 'photo', 6) for m in pics]
-    groups = {g['type']: g for g in meta.get('draft_materials', [])}
-    for t in (1, 2, 3, 7, 8):
-        groups[t] = {'type': t, 'value': []}   # 母版的音乐/字幕素材别带过来
-    groups[0] = {'type': 0, 'value': [e for e in entries if e['type'] == 0]}
-    groups[6] = {'type': 6, 'value': [e for e in entries if e['type'] == 6]}
-    meta['draft_materials'] = [groups[t] for t in (0, 1, 2, 3, 6, 7, 8)]
+    # ★ 老板口径（2026-10-19）：动复制出来的素材时，**不要动草稿箱里的东西，完整保留**。
+    #   ⇒ 母版原有的素材箱条目一条都不删，只在后面追加本次用到的素材（按 id 去重）。
+    groups = {g['type']: list(g.get('value') or []) for g in meta.get('draft_materials', [])}
+    for e in entries:
+        cur = groups.setdefault(e['type'], [])
+        if e['id'] in {x.get('id') for x in cur}:
+            continue
+        cur.append(e)
+    meta['draft_materials'] = [{'type': t, 'value': groups[t]} for t in sorted(groups)]
     write_json_object_with_codec(os.path.join(WORK, 'draft_meta_info.json'), meta, content_codec=codec)
     print('⑤ meta：视频 %d · 音频 %d · 图片 %d' % (len(vids), len(auds), len(pics)))
 
@@ -192,7 +195,13 @@ def main():
               {'type': 1, 'value': []},
               {'type': 2, 'value': []}]
     by = {g['type']: g for g in st}
-    by.setdefault(1, {'type': 1, 'value': []})['value'] = [{'child_id': e['id'], 'parent_id': ''} for e in entries]
+    kids = list((by.get(1) or {}).get('value') or [])
+    seen = {c['child_id'] for c in kids}
+    for e in entries:
+        if e['id'] not in seen:
+            kids.append({'child_id': e['id'], 'parent_id': ''})
+            seen.add(e['id'])
+    by.setdefault(1, {'type': 1, 'value': []})['value'] = kids   # 母版子项保留，只追加
     store['draft_virtual_store'] = [by[t] for t in sorted(by)]
     store['draft_materials'] = [{'type': g['type'], 'value': g['value']} for g in meta['draft_materials'] if g['value']]
     json.dump(store, open(sp, 'w', encoding='utf-8'), ensure_ascii=False)
@@ -215,7 +224,9 @@ def main():
     ids_content = {m['local_material_id'] for k in ('videos', 'audios', 'images') for m in back['materials'].get(k, [])}
     ids_meta = {it['id'] for g in mb['draft_materials'] for it in g['value']}
     ids_store = {c['child_id'] for c in store['draft_virtual_store'][1]['value']}
-    ck(ids_content == ids_meta == ids_store, '内容 / meta / 素材箱 三处 id 一致', '%d 条' % len(ids_content))
+    ck(ids_content <= ids_store <= ids_meta,
+       '素材箱完整（内容 ⊆ 树 ⊆ meta，母版原有素材保留）',
+       '内容 %d · 树 %d · meta %d' % (len(ids_content), len(ids_store), len(ids_meta)))
     ck(abs(back['duration'] / 1e6 - content['duration'] / 1e6) < 0.001, '内容时长 %.3fs' % (back['duration'] / 1e6))
 
     print('\n%s' % ('可以换名了：python tools/jianying/swap_draft.py --name "%s"' % a.name if not fails
