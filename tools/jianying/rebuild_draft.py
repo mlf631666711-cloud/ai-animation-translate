@@ -106,6 +106,20 @@ def main():
                 m['local_material_id'] = str(uuid.uuid4()); added += 1
             if not m.get('unique_id'):
                 m['unique_id'] = uuid.uuid4().hex
+    # ★ 保留母版素材箱：母版里**没用到**的素材定义也并进 content.materials
+    #   （只放 meta/树 里没用 —— 剪映会按自己的模型重建，必须让素材在内容层就有定义）
+    merged = 0
+    for kind in ('videos', 'audios', 'images'):
+        ours = content['materials'].setdefault(kind, [])
+        have_p = {str(x.get('path', '')).replace('', '/').lower() for x in ours}
+        have_id = {x.get('id') for x in ours}
+        for m in master_content['materials'].get(kind, []):
+            if str(m.get('path', '')).replace('', '/').lower() in have_p or m.get('id') in have_id:
+                continue
+            ours.append(json.loads(json.dumps(m, ensure_ascii=False)))
+            merged += 1
+    print('②b 母版素材箱并入内容 %d 条（原有素材不删）' % merged)
+
     print('② 内容对齐 id=%s · 补素材 id %d 条' % (UUID[:8] + '…', added))
 
     # ---------- 3 内容 4 处镜像 ----------
