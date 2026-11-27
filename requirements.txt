@@ -1,0 +1,4 @@
+edge-tts>=7.3.1
+Pillow>=10.0.0
+# 可选：ASR 回环 / 词时间戳（不装也能出片）
+# faster-whisper>=1.0.0

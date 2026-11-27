@@ -1,0 +1,9 @@
+{
+  "name": "ai-animation-translate",
+  "private": true,
+  "version": "1.0.0",
+  "description": "HTML 动画逐帧渲染所需的最小依赖",
+  "dependencies": {
+    "puppeteer-core": "^23.0.0"
+  }
+}
